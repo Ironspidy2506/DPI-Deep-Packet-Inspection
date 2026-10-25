@@ -1,0 +1,7 @@
+bin/
+obj/
+*.user
+*.suo
+filtered.pcap
+output.pcap
+rules.saved.json

@@ -1,0 +1,12 @@
+{
+  "blockIps": [
+    "192.168.1.50"
+  ],
+  "blockApps": [
+    "YouTube"
+  ],
+  "blockDomains": [
+    "*.tiktok.com",
+    "example.org"
+  ]
+}
