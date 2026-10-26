@@ -121,6 +121,9 @@ public sealed class RuleManager
         BlockedDomains = _blockedDomains.Count + _domainPatterns.Count
     };
 
+    public IReadOnlyList<string> BlockedAppNames() =>
+        _blockedApps.Keys.OrderBy(app => app.ToString()).Select(app => app.ToString()).ToArray();
+
     private static string NormalizeDomain(string domain) => domain.Trim().TrimEnd('.').ToLowerInvariant();
     private static void ValidateIp(string ip)
     {

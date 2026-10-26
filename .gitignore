@@ -5,3 +5,4 @@ obj/
 filtered.pcap
 output.pcap
 rules.saved.json
+dashboard/node_modules/

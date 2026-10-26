@@ -104,6 +104,26 @@ Save active rules:
 dotnet run -- test_dpi.pcap filtered.pcap --block-app YouTube --save-rules rules.saved.json
 ```
 
+## Realtime dashboard
+
+The React dashboard can consume real packet counters, classifications, and flow snapshots from the analyzer's dashboard host. Start the API with a PCAP input:
+
+```powershell
+dotnet run -- --dashboard test_dpi.pcap filtered-dashboard.pcap 5180
+```
+
+In a second terminal, start the React app:
+
+```powershell
+cd dashboard
+npm install
+npm run dev
+```
+
+Open http://127.0.0.1:5173/. The dashboard proxies `/api` to the .NET host and receives one-second Server-Sent Events from `/api/stream`. The dashboard mode still processes the PCAP offline; it does not capture from a network adapter.
+
+From the dashboard's **Run a real capture** panel, choose the input/output PCAP paths and an optional application rule. Submitting the form calls `POST /api/runs`; the backend applies `BlockApp(...)`, runs the normal DPI pipeline, and streams delivered and dropped packet counters back to the metric cards.
+
 The `--lbs` and `--fps` options set the number of logical partitions and worker tasks. Total worker count is `lbs × fps`.
 
 ### Convenience scripts
@@ -153,6 +173,7 @@ Supported application names include Google, YouTube, Facebook, Instagram, Twitte
 Packet_analyzer_dotnet/
 ├── PacketAnalyzer.csproj
 ├── Program.cs                 # CLI and argument parsing
+├── dashboard/                  # React + TypeScript operator console
 ├── rules.example.json
 ├── test_dpi.pcap               # Sample input PCAP
 ├── generate_test_pcap.py       # Optional test-PCAP generator
@@ -163,6 +184,7 @@ Packet_analyzer_dotnet/
 │   ├── SniExtractor.cs         # TLS ClientHello SNI extraction
 │   ├── RuleManager.cs          # IP, application, and domain rules
 │   └── DPIEngine.cs            # Bounded worker pipeline and reporting
+│   └── DashboardHost.cs         # JSON status and SSE telemetry endpoints
 └── scripts/
     ├── build.ps1
     ├── build.sh

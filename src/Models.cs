@@ -94,6 +94,19 @@ public sealed class WorkerStats
     public long Dropped;
 }
 
+public sealed record FlowSnapshot(
+    string SourceIp,
+    string DestinationIp,
+    ushort SourcePort,
+    ushort DestinationPort,
+    byte Protocol,
+    long Packets,
+    long Bytes,
+    long LastTimestampMicroseconds,
+    string Domain,
+    string Application,
+    string Action);
+
 public static class AppClassifier
 {
     private static readonly (string Marker, AppType App)[] Domains =

@@ -18,6 +18,26 @@ public sealed class DPIEngine : IDisposable
     public bool IsRunning { get; private set; }
     public DPIStats Stats => _stats;
 
+    public IReadOnlyDictionary<string, long> ClassificationSnapshot() =>
+        _classifications.ToDictionary(pair => pair.Key.ToString(), pair => pair.Value);
+
+    public IReadOnlyList<FlowSnapshot> FlowSnapshot() => _connections.Snapshot()
+        .OrderByDescending(flow => flow.Bytes)
+        .Take(100)
+        .Select(flow => new FlowSnapshot(
+            flow.Tuple.SrcIp,
+            flow.Tuple.DstIp,
+            flow.Tuple.SrcPort,
+            flow.Tuple.DstPort,
+            flow.Tuple.Protocol,
+            flow.Packets,
+            flow.Bytes,
+            flow.LastTimestampMicroseconds,
+            flow.Domain,
+            flow.Application.ToString(),
+            flow.Action.ToString()))
+        .ToArray();
+
     public bool Initialize()
     {
         if (_config.LoadBalancers < 1 || _config.WorkersPerBalancer < 1 || _config.QueueCapacity < 1)
@@ -73,10 +93,12 @@ public sealed class DPIEngine : IDisposable
                 var fastPath = new FastPathProcessor(_rules);
                 await foreach (var item in channel.Reader.ReadAllAsync())
                 {
+                    PacketAction action = fastPath.Process(item.Parsed);
                     _connections.Observe(
                         new FiveTuple(item.Parsed.SrcIp, item.Parsed.DstIp,
                             item.Parsed.SrcPort, item.Parsed.DstPort, item.Parsed.Protocol),
-                        item.Raw.Data.Length, item.Raw.Header.TsSec, item.Raw.Header.TsUsec);
+                        item.Raw.Data.Length, item.Raw.Header.TsSec, item.Raw.Header.TsUsec,
+                        item.Parsed.Domain, item.Parsed.Application, action);
                     Interlocked.Increment(ref _stats.TotalPackets);
                     Interlocked.Add(ref _stats.TotalBytes, item.Raw.Data.Length);
                     if (item.Parsed.HasTcp) Interlocked.Increment(ref _stats.TcpPackets);
@@ -87,7 +109,7 @@ public sealed class DPIEngine : IDisposable
                         _classifications.AddOrUpdate(item.Parsed.Application, 1, (_, old) => old + 1);
                     }
 
-                    if (fastPath.Process(item.Parsed) == PacketAction.Drop)
+                    if (action == PacketAction.Drop)
                     {
                         Interlocked.Increment(ref _stats.DroppedPackets);
                         if (_config.Verbose)

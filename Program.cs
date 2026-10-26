@@ -1,5 +1,10 @@
 using PacketAnalyzer;
 
+if (args.Length > 0 && args[0].Equals("--dashboard", StringComparison.OrdinalIgnoreCase))
+{
+    return await DashboardHost.RunAsync(args.Skip(1).ToArray());
+}
+
 static void Usage()
 {
     Console.WriteLine("""
